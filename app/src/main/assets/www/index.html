@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+  />
+  <title>H5 Container</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Android H5 Container</p>
+      <h1>调试容器已连接到当前原生能力</h1>
+      <p class="subtitle">
+        这里是内置调试 bundle，可直接验证运行时信息、设备信息、Bundle 切换以及录音相关接口。
+      </p>
+    </section>
+
+    <section class="panel">
+      <div class="actions">
+        <button data-action="runtime">运行时信息</button>
+        <button data-action="device">设备信息</button>
+        <button data-action="package">包信息</button>
+        <button data-action="bundlePicker">Bundle 切换列表</button>
+        <button data-action="toast">显示 Toast</button>
+        <button data-action="external">打开官网</button>
+        <button data-action="close" class="danger">关闭 App</button>
+      </div>
+      <pre id="result">等待调用 NativeBridge...</pre>
+    </section>
+
+    <section class="panel">
+      <h3 style="margin:0 0 12px">录音调试</h3>
+      <div class="actions">
+        <button data-action="reqPerm">请求录音权限</button>
+        <button data-action="recState">录音状态</button>
+        <button data-action="recStart">开始录音</button>
+        <button data-action="recStop" class="danger">停止录音</button>
+        <button data-action="recCancel" class="danger">取消录音</button>
+      </div>
+      <div id="rec-status" style="margin-top:12px;padding:12px;border-radius:12px;background:#f0f4f8;font-size:14px;">
+        录音状态：未开始
+      </div>
+      <div id="rec-player" style="margin-top:8px;"></div>
+      <pre id="rec-result" style="margin-top:8px;min-height:80px;">录音 API 返回结果...</pre>
+    </section>
+  </main>
+
+  <script src="js/native-bridge.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

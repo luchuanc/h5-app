@@ -1,0 +1,8 @@
+{
+  "title": "Startup Poster",
+  "description": "Image-only startup bundle",
+  "launcher": {
+    "aliasId": "aurora",
+    "appName": "H5 Poster"
+  }
+}

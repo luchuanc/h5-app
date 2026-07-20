@@ -1,0 +1,151 @@
+:root {
+  color-scheme: dark;
+  --bg: #09111b;
+  --panel: rgba(10, 18, 30, 0.82);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --text: #f5f8fc;
+  --muted: rgba(245, 248, 252, 0.78);
+  --accent: #86d6f5;
+  --accent-strong: #4b7cff;
+  --danger: #c85f5f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(75, 124, 255, 0.16), transparent 26%),
+    linear-gradient(180deg, #09111b, #071018);
+  color: var(--text);
+  font-family: "Segoe UI", "PingFang SC", sans-serif;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.page {
+  width: min(920px, calc(100vw - 24px));
+  margin: 0 auto;
+  padding: 18px 0 32px;
+}
+
+.hero-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 38vh;
+  padding: 0;
+  border: 1px solid var(--panel-border);
+  border-radius: 28px;
+  overflow: hidden;
+  background: transparent;
+  text-align: left;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+}
+
+.hero-image,
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-image {
+  object-fit: cover;
+}
+
+.hero-overlay {
+  background:
+    linear-gradient(180deg, rgba(3, 10, 20, 0.12), rgba(4, 9, 17, 0.84)),
+    radial-gradient(circle at 78% 12%, rgba(134, 214, 245, 0.22), transparent 28%);
+}
+
+.hero-copy {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(32px, 8vw, 56px);
+  line-height: 1;
+}
+
+.hero-copy p:last-child {
+  margin: 10px 0 0;
+  max-width: 28rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.panel {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 26px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  backdrop-filter: blur(18px);
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+button {
+  appearance: none;
+  border: none;
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #06101a;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+button.danger {
+  background: linear-gradient(135deg, #e68d8d, var(--danger));
+  color: white;
+}
+
+pre {
+  margin: 16px 0 0;
+  min-height: 260px;
+  padding: 16px;
+  overflow: auto;
+  border-radius: 20px;
+  background: #050b13;
+  color: #ecf4fb;
+  line-height: 1.6;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .page {
+    width: calc(100vw - 16px);
+    padding-top: 10px;
+  }
+
+  .button-grid {
+    grid-template-columns: 1fr;
+  }
+}

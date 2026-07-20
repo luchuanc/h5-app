@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+  />
+  <title>Runtime Lab</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body data-bundle-title="Runtime Lab" data-bundle-accent="midnight">
+  <main class="page">
+    <button id="heroTapTarget" class="hero-card" type="button" aria-label="Open bundle picker">
+      <img src="file:///android_asset/shared_hero.png" alt="Shared splash artwork" class="hero-image" />
+      <div class="hero-overlay"></div>
+      <div class="hero-copy">
+        <p class="eyebrow">Default Bundle</p>
+        <h1>Runtime Lab</h1>
+        <p>Tap this banner 10 times within 3 seconds to choose a bundle.</p>
+      </div>
+    </button>
+
+    <section class="panel">
+      <div class="button-grid">
+        <button data-action="runtime">Runtime Info</button>
+        <button data-action="device">Device Info</button>
+        <button data-action="package">Package Info</button>
+        <button data-action="bundles">Bundle List</button>
+        <button data-action="picker">Open Picker</button>
+        <button data-action="toast">Show Toast</button>
+        <button data-action="external">Open Android Docs</button>
+        <button data-action="close" class="danger">Close App</button>
+      </div>
+      <pre id="result">Runtime Lab ready.</pre>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

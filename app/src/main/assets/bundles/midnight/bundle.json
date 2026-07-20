@@ -1,0 +1,8 @@
+{
+  "title": "Runtime Lab",
+  "description": "Built-in test page for native bridge and bundle APIs",
+  "launcher": {
+    "aliasId": "runtime",
+    "appName": "Runtime Lab"
+  }
+}

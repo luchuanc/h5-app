@@ -1,0 +1,8 @@
+{
+  "title": "Debug Console",
+  "description": "Container debug page with native bridge and recording APIs",
+  "launcher": {
+    "aliasId": "runtime",
+    "appName": "Debug Console"
+  }
+}

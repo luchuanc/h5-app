@@ -1,0 +1,9 @@
+{
+  "title": "\u9646\u5955\u51e1\u79ef\u5206",
+  "description": "Remote H5 bundle loaded directly over HTTPS",
+  "entryUrl": "https://point.lucc.site:8888/",
+  "launcher": {
+    "aliasId": "points",
+    "appName": "\u9646\u5955\u51e1\u79ef\u5206"
+  }
+}

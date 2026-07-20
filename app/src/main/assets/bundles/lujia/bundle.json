@@ -1,0 +1,9 @@
+{
+  "title": "\u9646\u5bb6\u8d26\u672c",
+  "description": "Remote H5 bundle loaded directly over HTTPS",
+  "entryUrl": "https://money.lucc.site:8888/",
+  "launcher": {
+    "aliasId": "lujia",
+    "appName": "\u9646\u5bb6\u8d26\u672c"
+  }
+}
