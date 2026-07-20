@@ -20,7 +20,8 @@ class NativeBridge(
     private val activity: Activity,
     private val packageManager: H5PackageManager,
     private val webView: WebView,
-    private val recordingManager: RecordingManager
+    private val recordingManager: RecordingManager,
+    private val immersiveModeController: ImmersiveModeController
 ) {
     @JavascriptInterface
     fun getRuntimeInfo(): String {
@@ -42,6 +43,8 @@ class NativeBridge(
                 put("toast")
                 put("closeApp")
                 put("openExternalUrl")
+                put("enterLandscapeFullscreen")
+                put("exitLandscapeFullscreen")
                 put("requestAudioPermission")
                 put("startRecording")
                 put("stopRecording")
@@ -133,6 +136,22 @@ class NativeBridge(
         } catch (_: Exception) {
             error("OPEN_URL_FAILED", "Failed to open external url")
         }
+    }
+
+    @JavascriptInterface
+    fun enterLandscapeFullscreen(): String {
+        activity.runOnUiThread {
+            immersiveModeController.enterLandscapeFullscreen()
+        }
+        return success(null)
+    }
+
+    @JavascriptInterface
+    fun exitLandscapeFullscreen(): String {
+        activity.runOnUiThread {
+            immersiveModeController.exitLandscapeFullscreen()
+        }
+        return success(null)
     }
 
     // ── Recording APIs ──────────────────────────────────────────────

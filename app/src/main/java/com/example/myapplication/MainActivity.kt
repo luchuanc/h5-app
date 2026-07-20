@@ -3,6 +3,7 @@ package com.example.myapplication
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
@@ -25,6 +26,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.core.app.ActivityCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.myapplication.h5.H5BundleInfo
 import com.example.myapplication.h5.H5PackageManager
@@ -34,6 +36,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     private lateinit var packageManager: H5PackageManager
     private lateinit var recordingManager: RecordingManager
     private lateinit var nativeBridge: NativeBridge
+    private lateinit var immersiveModeController: ImmersiveModeController
     private var currentBundle: H5BundleInfo? = null
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -52,9 +55,28 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
 
-        nativeBridge = NativeBridge(this, packageManager, webView, recordingManager)
-
         setContentView(createRootView())
+        immersiveModeController = ImmersiveModeController(
+            requestOrientation = { requestedOrientation = it },
+            setSystemBarsVisible = { visible ->
+                WindowCompat.getInsetsController(window, window.decorView).apply {
+                    if (visible) {
+                        show(WindowInsetsCompat.Type.systemBars())
+                    } else {
+                        systemBarsBehavior =
+                            androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        hide(WindowInsetsCompat.Type.systemBars())
+                    }
+                }
+            }
+        )
+        nativeBridge = NativeBridge(
+            this,
+            packageManager,
+            webView,
+            recordingManager,
+            immersiveModeController
+        )
         configureWebView()
         installBackHandler()
         loadBestAvailableBundle()
@@ -367,6 +389,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
                 grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED
             nativeBridge.onPermissionResult(granted)
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        webView.invalidate()
     }
 
     override fun onDestroy() {
