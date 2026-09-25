@@ -14,10 +14,48 @@ class GameCatalog(context: Context) {
         context.assets.open("publishing.json").bufferedReader().use { JSONObject(it.readText()) }
     }.getOrElse { JSONObject() }
 
+    init { migrateBundledAddress() }
+
     fun url(): String = prefs.getString("url", null) ?: bundled.optString("catalogUrl")
     fun saveUrl(value: String): Boolean {
         val normalized = validUrl(value.trim()) ?: return false
         return prefs.edit().putString("url", normalized).commit()
+    }
+
+    private fun migrateBundledAddress() {
+        val endpoint = validUrl(bundled.optString("catalogUrl")) ?: return
+        val previousBundle = prefs.getString("bundledCatalogUrl", null)
+        if (previousBundle == endpoint) return
+        val previous = mutableSetOf<String>()
+        previousBundle?.let { previous.add(it) }
+        bundled.optJSONArray("previousCatalogUrls")?.let { urls ->
+            for (i in 0 until urls.length()) validUrl(urls.optString(i))?.let { previous.add(it) }
+        }
+        previous.remove(endpoint)
+        val saved = prefs.getString("url", null)
+        val edit = prefs.edit().putString("bundledCatalogUrl", endpoint)
+        // Only migrate known platform endpoints; an unrelated custom catalog stays selected.
+        if (saved == null || saved in previous) {
+            val target = URI(endpoint)
+            val origins = previous.map { URI(it) }
+            fun migrateGame(game: JSONObject): JSONObject {
+                val address = validUrl(game.optString("url"))?.let(::URI) ?: return game
+                if (origins.any { it.scheme == address.scheme && it.rawAuthority == address.rawAuthority }) {
+                    game.put("url", URI(target.scheme, target.rawAuthority, address.path, address.query, address.fragment).toASCIIString())
+                }
+                return game
+            }
+            runCatching { prefs.getString("games", null)?.let(::JSONArray) }.getOrNull()?.let { games ->
+                for (i in 0 until games.length()) games.optJSONObject(i)?.let(::migrateGame)
+                edit.putString("games", games.toString())
+            }
+            runCatching { prefs.getString("selected", null)?.let(::JSONObject) }.getOrNull()?.let {
+                edit.putString("selected", migrateGame(it).toString())
+            }
+            edit.putString("url", endpoint)
+            edit.putString("baseUrl", URI(target.scheme, target.rawAuthority, null, null, null).toASCIIString())
+        }
+        edit.commit()
     }
     fun defaultId(): String? = when {
         bundled.optBoolean("customGameUrl") -> "platform:default"

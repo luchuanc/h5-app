@@ -59,7 +59,7 @@ class BundlePickerActivity : ComponentActivity() {
         })
 
         val catalogInput = EditText(this).apply {
-            hint = "http://服务器:8200/api/catalog"
+            hint = "https://games.lucc.site:8888/api/catalog"
             setText(packageManager.gameCatalog.url())
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
             contentDescription = "游戏列表地址"

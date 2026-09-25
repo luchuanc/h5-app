@@ -5,21 +5,27 @@ plugins {
 
 import java.util.Properties
 import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
 
 val publishingFile = rootProject.file("publishing.json")
-val publishingConfig: Map<*, *> = if (publishingFile.exists()) JsonSlurper().parse(publishingFile) as Map<*, *> else emptyMap<String, Any>()
-val managed = publishingFile.exists()
+val publishingDefaults = rootProject.file("publishing.defaults.json")
+val publishingConfig = mutableMapOf<String, Any?>().apply {
+    for (file in listOf(publishingDefaults, publishingFile)) {
+        if (file.exists()) (JsonSlurper().parse(file) as Map<*, *>).forEach { (key, value) -> put(key as String, value) }
+    }
+}
+val managed = publishingConfig.isNotEmpty()
 val iconFile = rootProject.file("publishing-icon.png")
 val generatedPublishing = layout.buildDirectory.dir("generated/publishing")
 val generatePublishing by tasks.registering {
-    inputs.files(publishingFile, iconFile).optional()
+    inputs.files(publishingDefaults, publishingFile, iconFile).optional()
     outputs.dir(generatedPublishing)
     doLast {
         val output = generatedPublishing.get().asFile
         output.deleteRecursively()
         output.resolve("assets").mkdirs()
         output.resolve("res").mkdirs()
-        if (managed) publishingFile.copyTo(output.resolve("assets/publishing.json"), overwrite = true)
+        if (managed) output.resolve("assets/publishing.json").writeText(JsonOutput.prettyPrint(JsonOutput.toJson(publishingConfig)))
         if (managed && iconFile.exists()) {
             output.resolve("res/drawable-nodpi").mkdirs()
             iconFile.copyTo(output.resolve("res/drawable-nodpi/publishing_icon.png"), overwrite = true)

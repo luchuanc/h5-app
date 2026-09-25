@@ -347,6 +347,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     private fun loadBundle(bundle: H5BundleInfo, forceRefresh: Boolean) {
         currentBundle = bundle
+        val selectedId = packageManager.getSelectedLaunchTargetId()
+        immersiveModeController.setGameMode(selectedId.startsWith("game:") || selectedId == "platform:default")
         val isRemoteBundle = isRemoteBundle(bundle.entryUrl)
         webView.settings.cacheMode = if (isRemoteBundle) {
             WebSettings.LOAD_NO_CACHE
@@ -410,6 +412,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         webView.invalidate()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && ::immersiveModeController.isInitialized) immersiveModeController.restoreGameFullscreen()
     }
 
     override fun onDestroy() {

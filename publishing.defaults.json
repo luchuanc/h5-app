@@ -1,0 +1,15 @@
+{
+  "appName": "游戏中心",
+  "versionName": "1.0.2",
+  "versionCode": 3,
+  "defaultGameId": "xiangsu",
+  "gameUrl": "https://games.lucc.site:8888/xiangsu/",
+  "customGameUrl": false,
+  "catalogUrl": "https://games.lucc.site:8888/api/catalog",
+  "previousCatalogUrls": ["http://192.168.31.155:8200/api/catalog"],
+  "games": [
+    {"id": "zizou", "name": "山海弈", "url": "https://games.lucc.site:8888/zizou/", "version": "latest"},
+    {"id": "xiangsu", "name": "像素远征", "url": "https://games.lucc.site:8888/xiangsu/", "version": "latest"},
+    {"id": "backHome", "name": "最后一家回收站", "url": "https://games.lucc.site:8888/backHome/", "version": "latest"}
+  ]
+}

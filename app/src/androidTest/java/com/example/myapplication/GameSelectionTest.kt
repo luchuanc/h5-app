@@ -7,6 +7,8 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.json.JSONArray
+import org.json.JSONObject
 import java.net.ServerSocket
 import kotlin.concurrent.thread
 
@@ -17,6 +19,46 @@ class GameSelectionTest {
         context.getSharedPreferences("publishing_catalog", 0).edit().clear().commit()
         context.getSharedPreferences("h5_bundle_prefs", 0).edit().clear().commit()
     }
+    @Test fun productionDefaultsIncludeAllGames() {
+        clearPreferences()
+        val manager = H5PackageManager(context)
+        try {
+            assertEquals("https://games.lucc.site:8888/api/catalog", manager.gameCatalog.url())
+            assertEquals(setOf("game:zizou", "game:xiangsu", "game:backHome"), manager.gameCatalog.options().map { it.id }.toSet())
+            assertEquals("https://games.lucc.site:8888/xiangsu/", manager.resolveLaunchBundle().entryUrl)
+        } finally { manager.shutdown() }
+    }
+
+    @Test fun upgradingMigratesCachedAndSelectedAddressesBeforeNetworkAccess() {
+        clearPreferences()
+        val old = "http://192.168.31.155:8200"
+        val games = JSONArray().put(JSONObject().put("id", "backHome").put("url", "$old/backHome/?save=1#town"))
+            .put(JSONObject().put("id", "external").put("url", "https://other.example.com/demo/"))
+        context.getSharedPreferences("publishing_catalog", 0).edit()
+            .putString("url", "$old/api/catalog").putString("baseUrl", old)
+            .putString("games", games.toString())
+            .putString("selected", JSONObject().put("id", "zizou").put("url", "$old/zizou/").toString()).commit()
+        context.getSharedPreferences("h5_bundle_prefs", 0).edit().putString("selected_launch_target", "game:backHome").commit()
+        repeat(2) {
+            val manager = H5PackageManager(context)
+            try {
+                assertEquals("game:backHome", manager.getSelectedLaunchTargetId())
+                assertEquals("https://games.lucc.site:8888/api/catalog", manager.gameCatalog.url())
+                assertEquals("https://games.lucc.site:8888/backHome/?save=1#town", manager.resolveLaunchBundle().entryUrl)
+                assertEquals("https://games.lucc.site:8888/zizou/", manager.gameCatalog.options().first { it.id == "game:zizou" }.entryUrl)
+                assertEquals("https://other.example.com/demo/", manager.gameCatalog.options().first { it.id == "game:external" }.entryUrl)
+            } finally { manager.shutdown() }
+        }
+    }
+
+    @Test fun customCatalogIsPreservedWhenTheAppDefaultChanges() {
+        clearPreferences()
+        val custom = "https://custom.example.com/api/catalog"
+        context.getSharedPreferences("publishing_catalog", 0).edit().putString("url", custom).commit()
+        val manager = H5PackageManager(context)
+        try { assertEquals(custom, manager.gameCatalog.url()) } finally { manager.shutdown() }
+    }
+
     @Test fun refreshedAddressesAndSelectionSurviveRecreationAndNetworkFailure() {
         clearPreferences()
         val server = ServerSocket(0)
