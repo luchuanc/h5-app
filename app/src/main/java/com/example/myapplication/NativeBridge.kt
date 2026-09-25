@@ -39,7 +39,7 @@ class NativeBridge(
                 put("getDeviceInfo")
                 put("getPackageInfo")
                 put("getAvailableBundles")
-                put("openBundlePicker")
+                if (!packageManager.hasSelectedLaunchTarget()) put("openBundlePicker")
                 put("toast")
                 put("closeApp")
                 put("openExternalUrl")
@@ -96,8 +96,15 @@ class NativeBridge(
 
     @JavascriptInterface
     fun openBundlePicker(): String {
+        if (packageManager.hasSelectedLaunchTarget()) {
+            return error("SELECTION_LOCKED", "Content has already been selected")
+        }
         activity.runOnUiThread {
-            activity.startActivity(Intent(activity, BundlePickerActivity::class.java))
+            // Only the original startup poster may open the first-run picker.
+            if (!packageManager.hasSelectedLaunchTarget() &&
+                webView.url == "file:///android_asset/bundles/aurora/www/index.html") {
+                activity.startActivity(Intent(activity, BundlePickerActivity::class.java))
+            }
         }
         return success(null)
     }

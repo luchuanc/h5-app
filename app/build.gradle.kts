@@ -34,7 +34,7 @@ val generatePublishing by tasks.registering {
 }
 tasks.named("preBuild").configure { dependsOn(generatePublishing) }
 
-val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystorePropertiesFile = rootProject.file(System.getenv("H5_RELEASE_SIGNING_PROPERTIES") ?: "keystore.properties")
 val keystoreProperties = Properties()
 val hasReleaseSigning = keystorePropertiesFile.exists().also { exists ->
     if (exists) {
@@ -101,6 +101,7 @@ android {
             buildConfigField("String", "REMOTE_MANIFEST_URL", "\"\"")
         }
         release {
+            isDebuggable = false
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

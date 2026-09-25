@@ -23,20 +23,29 @@ class BundlePickerActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         packageManager = H5PackageManager(applicationContext)
 
+        if (packageManager.hasSelectedLaunchTarget()) {
+            finish()
+            return
+        }
         render()
         if (packageManager.gameCatalog.url().isNotBlank()) refreshGames()
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (packageManager.hasSelectedLaunchTarget()) finish()
+    }
+
     private fun refreshGames() {
         packageManager.refreshGamesAsync(
-            onSuccess = { count -> runOnUiThread { if (!isDestroyed) { render(); Toast.makeText(this, "已更新 $count 个游戏", Toast.LENGTH_SHORT).show() } } },
-            onFailure = { error -> runOnUiThread { if (!isDestroyed) Toast.makeText(this, "${error.message}，保留已缓存列表", Toast.LENGTH_LONG).show() } }
+            onSuccess = { count -> runOnUiThread { if (!isDestroyed && !isFinishing) { render(); Toast.makeText(this, "已更新 $count 个游戏", Toast.LENGTH_SHORT).show() } } },
+            onFailure = { error -> runOnUiThread { if (!isDestroyed && !isFinishing) Toast.makeText(this, "${error.message}，保留已缓存列表", Toast.LENGTH_LONG).show() } }
         )
     }
 
     private fun render() {
         val currentId = packageManager.getSelectedLaunchTargetId()
-        val options = packageManager.getAvailableBundleOptions()
+        val options = packageManager.getSelectableBundleOptions()
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -45,14 +54,14 @@ class BundlePickerActivity : ComponentActivity() {
         }
 
         content.addView(TextView(this).apply {
-            text = "选择游戏 / Bundle"
+            text = "选择内容"
             textSize = 28f
             setTypeface(typeface, Typeface.BOLD)
             setTextColor(Color.parseColor("#17324D"))
         })
 
         content.addView(TextView(this).apply {
-            text = "选择后立即打开，下次启动仍使用所选游戏。可刷新平台最新列表。"
+            text = "选择后立即进入，之后启动直接打开。仅清除 App 数据后可重新选择。"
             textSize = 15f
             setTextColor(Color.parseColor("#5F7488"))
             setPadding(0, dp(10), 0, dp(22))
@@ -150,7 +159,7 @@ class BundlePickerActivity : ComponentActivity() {
             })
 
             addView(TextView(context).apply {
-                text = "输入网址后会按远程 bundle 打开，并记住为下次默认首页。"
+                text = "输入网址后立即打开，并记住为启动首页。"
                 textSize = 14f
                 setTextColor(Color.parseColor("#5F7488"))
                 setPadding(0, dp(8), 0, dp(12))
@@ -206,28 +215,21 @@ class BundlePickerActivity : ComponentActivity() {
             })
 
             addView(TextView(context).apply {
-                text = "Version ${option.version} · ${option.mode}"
+                text = "版本 ${option.version}"
                 textSize = 13f
                 setTextColor(Color.parseColor("#0D6C91"))
-            })
-
-            addView(TextView(context).apply {
-                text = option.source
-                textSize = 12f
-                setTextColor(Color.parseColor("#7F93A5"))
-                setPadding(0, dp(6), 0, 0)
             })
 
             setOnClickListener {
                 val stored = packageManager.selectLaunchTarget(option.id)
                 if (!stored) {
-                    Toast.makeText(context, "Failed to switch bundle", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "无法保存选择", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
                 Toast.makeText(
                     context,
-                    "Switching to ${option.title}",
+                    "正在打开 ${option.title}",
                     Toast.LENGTH_SHORT
                 ).show()
                 H5PackageManager.restartApp(this@BundlePickerActivity)

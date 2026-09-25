@@ -23,3 +23,8 @@ emulator_*.png
 
 /publishing.json
 /publishing-icon.png
+
+*.jks
+*.keystore
+*.p12
+/output/

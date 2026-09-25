@@ -95,13 +95,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         val root = FrameLayout(this).apply {
             clipToPadding = true
             addView(webView)
-            if (BuildConfig.DEBUG) addView(android.widget.Button(this@MainActivity).apply {
-                text = "游戏"
-                contentDescription = "切换游戏或调试 Bundle"
-                textSize = 12f
-                alpha = 0.85f
-                setOnClickListener { startActivity(Intent(this@MainActivity, BundlePickerActivity::class.java)) }
-            }, FrameLayout.LayoutParams((64 * resources.displayMetrics.density).toInt(), (48 * resources.displayMetrics.density).toInt(), android.view.Gravity.TOP or android.view.Gravity.END))
+
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
@@ -139,7 +133,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         webView.addJavascriptInterface(nativeBridge, "NativeBridgeHost")
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                Log.d(
+                if (BuildConfig.DEBUG) Log.d(
                     TAG,
                     "H5 console ${consoleMessage.messageLevel()}: ${consoleMessage.message()}"
                 )
@@ -174,46 +168,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 Log.d(TAG, "Loading page: $url")
                 super.onPageStarted(view, url, favicon)
-            }
-
-            override fun shouldInterceptRequest(
-                view: WebView,
-                request: WebResourceRequest
-            ): WebResourceResponse? {
-                if (BuildConfig.DEBUG &&
-                    request.url.lastPathSegment == "vconsole.min.js"
-                ) {
-                    return try {
-                        val data = readAssetText("www/js/vconsole.min.js")
-                        WebResourceResponse(
-                            "application/javascript", "utf-8",
-                            data.byteInputStream()
-                        )
-                    } catch (_: Exception) {
-                        null
-                    }
-                }
-                return super.shouldInterceptRequest(view, request)
-            }
-
-            override fun onPageFinished(view: WebView, url: String?) {
-                super.onPageFinished(view, url)
-                if (BuildConfig.DEBUG) {
-                    view.evaluateJavascript(
-                        """
-                        (function(){
-                          if(window.VConsole) return;
-                          var s=document.createElement('script');
-                          s.src='js/vconsole.min.js';
-                          s.onload=function(){
-                            try{ new VConsole(); }catch(e){}
-                          };
-                          document.head.appendChild(s);
-                        })();
-                        """.trimIndent(),
-                        null
-                    )
-                }
             }
 
             override fun onReceivedError(
@@ -393,8 +347,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     private fun isRemoteBundle(entryUrl: String): Boolean =
         entryUrl.startsWith("https://") || entryUrl.startsWith("http://")
-    private fun readAssetText(path: String): String =
-        assets.open(path).bufferedReader().use { it.readText() }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,

@@ -47,11 +47,19 @@ class H5PackageManager(
     }
 
     fun getSelectedLaunchTargetId(): String =
-        prefs.getString(PREF_SELECTED_LAUNCH_TARGET, gameCatalog.defaultId() ?: defaultBuiltinOption().id)
+        prefs.getString(PREF_SELECTED_LAUNCH_TARGET, defaultBuiltinOption().id)
             ?: defaultBuiltinOption().id
 
-    fun selectLaunchTarget(id: String): Boolean {
-        val option = getAvailableBundleOptions().firstOrNull { it.id == id } ?: return false
+    // The existing key is the source of truth, including choices made before this version.
+    // A catalog refresh or app upgrade must never reopen onboarding.
+    fun hasSelectedLaunchTarget(): Boolean = prefs.contains(PREF_SELECTED_LAUNCH_TARGET)
+
+    fun getSelectableBundleOptions(): List<LaunchBundleOption> = getAvailableBundleOptions()
+        .filterNot { it.id == "builtin:aurora" || it.id == "builtin:midnight" }
+
+    fun selectLaunchTarget(id: String): Boolean = synchronized(selectionLock) {
+        if (hasSelectedLaunchTarget()) return false
+        val option = getSelectableBundleOptions().firstOrNull { it.id == id } ?: return false
 
         val stored = prefs.edit().putString(PREF_SELECTED_LAUNCH_TARGET, id).commit()
         if (stored) {
@@ -64,7 +72,8 @@ class H5PackageManager(
     fun getCustomRemoteUrl(): String =
         prefs.getString(PREF_CUSTOM_REMOTE_URL, "").orEmpty()
 
-    fun saveCustomRemoteUrl(rawUrl: String): Boolean {
+    fun saveCustomRemoteUrl(rawUrl: String): Boolean = synchronized(selectionLock) {
+        if (hasSelectedLaunchTarget()) return false
         val normalizedUrl = normalizeRemoteUrl(rawUrl) ?: return false
         val stored = prefs.edit()
             .putString(PREF_CUSTOM_REMOTE_URL, normalizedUrl)
@@ -518,6 +527,7 @@ class H5PackageManager(
         private const val MODE_BUILTIN = "builtin"
         const val MODE_REMOTE_URL = "remote_url"
         const val MODE_LOCAL_PACKAGE = "local_package"
+        private val selectionLock = Any()
         private const val PREFS_NAME = "h5_bundle_prefs"
         private const val PREF_SELECTED_LAUNCH_TARGET = "selected_launch_target"
         private const val PREF_CUSTOM_REMOTE_URL = "custom_remote_url"

@@ -1,7 +1,7 @@
 {
   "appName": "游戏中心",
-  "versionName": "1.0.2",
-  "versionCode": 3,
+  "versionName": "1.0.3",
+  "versionCode": 4,
   "defaultGameId": "xiangsu",
   "gameUrl": "https://games.lucc.site:8888/xiangsu/",
   "customGameUrl": false,

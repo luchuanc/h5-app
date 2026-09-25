@@ -1,15 +1,27 @@
 # H5 App
 
-## 发布平台调试包
+## 启动与选择
 
-仓库默认配置为 `publishing.defaults.json`，游戏与列表使用 `https://games.lucc.site:8888`，本地直接构建即可使用三款游戏。平台构建时生成不入库的根目录 `publishing.json` 和可选 `publishing-icon.png`，覆盖默认名称、版本、图标和游戏列表。配置样例：
+首次启动显示原 Startup Poster，3 秒内连续点击海报 10 次才打开内容选择页，前 9 次不会打开。选择后立即进入并持久保存；后续冷启动和覆盖升级直接打开已有选择。没有常驻切换按钮，网页桥接、直接打开选择 Activity 和保存接口均拒绝再次选择。只有清除 App 数据后重新走海报与十次点击流程。
 
-```json
-{"appName":"游戏中心","versionName":"1.0.2","versionCode":3,"defaultGameId":"xiangsu","gameUrl":"https://games.lucc.site:8888/xiangsu/","customGameUrl":false,"catalogUrl":"https://games.lucc.site:8888/api/catalog","games":[{"id":"xiangsu","name":"像素远征","url":"https://games.lucc.site:8888/xiangsu/","version":"latest"}]}
-```
+选择页保留远端列表刷新、自定义 H5 和业务 Bundle，隐藏海报自身及 Runtime Lab 调试项。容器不再注入 vConsole，不显示右上角「游戏」按钮；release 关闭 WebView 调试。游戏自身的页面和资源不被过滤或修改。
 
-使用 JDK 17、SDK platform 36/build-tools 35.0.0，设置 `JAVA_HOME`、`ANDROID_HOME`，执行 `sh ./gradlew --no-daemon :app:assembleDebug`。不要提交本机 Java 路径。平台图标为正方形 PNG；留空使用内置图标。原有调试和业务 Bundle 仍可在选择器中打开。
+仓库默认配置为 `publishing.defaults.json`，列表地址为 `https://games.lucc.site:8888/api/catalog`，默认游戏为同域名的 `/zizou/`、`/xiangsu/`、`/backHome/`。`defaultGameId` 仅定义列表内容，不能代替用户首次选择。平台生成的不入库 `publishing.json` 和可选 `publishing-icon.png` 继续覆盖名称、图标、版本与列表。
 
-调试包右上角「游戏」可切换 Bundle，支持刷新远端列表，游戏 ID 和地址持久保存；冷启动先用缓存，再刷新地址。覆盖安装时，配置中的 `previousCatalogUrls` 和上次内置列表地址会迁移到新版域名，包括缓存列表与已选游戏；不覆盖其他自定义列表或外部游戏链接。未升级的旧 APK 仍需保持旧列表入口可达或手动修改列表 URL。发布平台模式固定使用配置的 App 名称/图标，切换游戏不会改变桌面图标。
+冷启动使用缓存并后台刷新列表。`previousCatalogUrls` 与上次内置列表地址负责旧 IP 地址迁移，包括缓存列表与已选游戏；保留外部自定义列表和游戏。升级不会清除选择。发布平台模式始终使用配置的 App 名称和图标。
 
-平台游戏打开时自动进入横屏全屏，支持左右横屏方向，并在返回游戏和冷启动时恢复；网页退出全屏也不会把游戏切回竖屏。方向变化由 Activity 处理，不重建 WebView，避免旋转时丢失游戏进度。原有业务/调试 Bundle 仍保留自己的全屏控制接口。
+平台游戏自动横屏全屏，支持左右横屏；方向变化由 Activity 处理，不重建 WebView。业务 Bundle 保留其原生录音、外链和全屏接口。
+
+## 构建与签名
+
+需要 Node.js、JDK 17、Android SDK platform 36/build-tools 35.0.0，设置 `JAVA_HOME`、`ANDROID_HOME`。
+
+- 调试与自动测试：`sh ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest :app:connectedDebugAndroidTest`
+- 正式包：`node scripts/build-release.mjs`，产物 `app/build/outputs/apk/release/app-release.apk`。
+- 平台项目构建命令设置为 `node scripts/build-release.mjs`，产物目录 `app/build/outputs/apk/release`。
+
+正式构建优先读取环境变量 `H5_RELEASE_SIGNING_PROPERTIES` 指定的签名属性文件，其次使用本地 `keystore.properties`。两者均未配置时，在构建用户的 `~/.config/h5-app/signing/` 首次生成专用 RSA 3072 / PKCS12 正式身份，以后所有构建复用。目录权限 700、私钥和属性文件 600；密码随机生成、不传到命令行、不打印。已有私钥缺少配置时拒绝覆盖，请恢复原配置。该目录必须在服务器迁移前安全备份；不同构建主机默认生成不同身份，不能互相覆盖安装。
+
+属性文件字段：`storeFile`（私钥绝对路径）、`storePassword`、`keyAlias`、`keyPassword`。不要提交属性文件、私钥或密码。直接运行 `assembleRelease` 而未配置签名可能生成未签名文件；发布必须使用上述正式构建入口并验证 APK。
+
+正式签名与旧服务器调试签名不同：首次换签需要卸载旧 App，会丢失本地选择与游戏数据。此后同一正式签名且版本代码递增即可覆盖升级并保留数据。旧调试 APK 保留用于回滚；回滚跨签名同样需要卸载。版本降低时也不能作为普通更新安装。

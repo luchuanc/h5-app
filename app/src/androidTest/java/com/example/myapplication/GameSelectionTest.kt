@@ -25,8 +25,32 @@ class GameSelectionTest {
         try {
             assertEquals("https://games.lucc.site:8888/api/catalog", manager.gameCatalog.url())
             assertEquals(setOf("game:zizou", "game:xiangsu", "game:backHome"), manager.gameCatalog.options().map { it.id }.toSet())
-            assertEquals("https://games.lucc.site:8888/xiangsu/", manager.resolveLaunchBundle().entryUrl)
+            assertEquals("file:///android_asset/bundles/aurora/www/index.html", manager.resolveLaunchBundle().entryUrl)
+            assertFalse(manager.hasSelectedLaunchTarget())
         } finally { manager.shutdown() }
+    }
+
+    @Test fun selectionIsOneTimeAcrossManagersUntilDataIsCleared() {
+        clearPreferences()
+        val first = H5PackageManager(context)
+        val second = H5PackageManager(context)
+        try {
+            assertFalse(first.selectLaunchTarget("builtin:aurora"))
+            assertFalse(first.selectLaunchTarget("builtin:midnight"))
+            assertFalse(first.selectLaunchTarget("missing"))
+            assertFalse(first.hasSelectedLaunchTarget())
+            assertTrue(first.selectLaunchTarget("game:backHome"))
+            assertTrue(second.hasSelectedLaunchTarget())
+            assertFalse(second.selectLaunchTarget("game:xiangsu"))
+            assertFalse(second.saveCustomRemoteUrl("https://example.com/"))
+            assertEquals("game:backHome", second.getSelectedLaunchTargetId())
+            assertEquals("https://games.lucc.site:8888/backHome/", second.resolveLaunchBundle().entryUrl)
+            clearPreferences()
+            assertFalse(second.hasSelectedLaunchTarget())
+            assertEquals("builtin:aurora", second.getSelectedLaunchTargetId())
+            assertTrue(second.saveCustomRemoteUrl("https://example.com/"))
+            assertFalse(first.selectLaunchTarget("game:xiangsu"))
+        } finally { first.shutdown(); second.shutdown() }
     }
 
     @Test fun upgradingMigratesCachedAndSelectedAddressesBeforeNetworkAccess() {
@@ -43,6 +67,8 @@ class GameSelectionTest {
             val manager = H5PackageManager(context)
             try {
                 assertEquals("game:backHome", manager.getSelectedLaunchTargetId())
+                assertTrue(manager.hasSelectedLaunchTarget())
+                assertFalse(manager.selectLaunchTarget("game:xiangsu"))
                 assertEquals("https://games.lucc.site:8888/api/catalog", manager.gameCatalog.url())
                 assertEquals("https://games.lucc.site:8888/backHome/?save=1#town", manager.resolveLaunchBundle().entryUrl)
                 assertEquals("https://games.lucc.site:8888/zizou/", manager.gameCatalog.options().first { it.id == "game:zizou" }.entryUrl)
