@@ -243,7 +243,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
     private fun showErrorPage(title: String, message: String) {
-        val fallbackUrl = currentBundle?.entryUrl ?: packageManager.resolveLaunchBundle().entryUrl
+        val fallbackUrl = H5EntryUrl.forApp(currentBundle?.entryUrl ?: packageManager.resolveLaunchBundle().entryUrl)
         val errorHtml = """
             <!DOCTYPE html>
             <html lang="en">
@@ -313,7 +313,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
             webView.clearCache(isRemoteBundle)
             webView.clearHistory()
         }
-        webView.loadUrl(bundle.entryUrl)
+        webView.loadUrl(H5EntryUrl.forApp(bundle.entryUrl))
     }
 
     private fun isTrustedRemoteNavigation(uri: Uri): Boolean {
