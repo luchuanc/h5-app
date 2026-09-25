@@ -37,6 +37,7 @@ class GameSelectionTest {
         try {
             assertFalse(first.selectLaunchTarget("builtin:aurora"))
             assertFalse(first.selectLaunchTarget("builtin:midnight"))
+            assertFalse(first.selectLaunchTarget("builtin:debug"))
             assertFalse(first.selectLaunchTarget("missing"))
             assertFalse(first.hasSelectedLaunchTarget())
             assertTrue(first.selectLaunchTarget("game:backHome"))

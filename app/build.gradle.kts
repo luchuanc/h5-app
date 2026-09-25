@@ -4,6 +4,7 @@ plugins {
 }
 
 import java.util.Properties
+import java.security.MessageDigest
 import groovy.json.JsonSlurper
 import groovy.json.JsonOutput
 
@@ -16,9 +17,12 @@ val publishingConfig = mutableMapOf<String, Any?>().apply {
 }
 val managed = publishingConfig.isNotEmpty()
 val iconFile = rootProject.file("publishing-icon.png")
+val gameIconDir = rootProject.file("publishing-icons")
+val manifestTemplate = rootProject.file("app/src/main/AndroidManifest.xml")
 val generatedPublishing = layout.buildDirectory.dir("generated/publishing")
 val generatePublishing by tasks.registering {
-    inputs.files(publishingDefaults, publishingFile, iconFile).optional()
+    inputs.files(publishingDefaults, publishingFile, iconFile, manifestTemplate).optional()
+    inputs.files(fileTree(gameIconDir))
     outputs.dir(generatedPublishing)
     doLast {
         val output = generatedPublishing.get().asFile
@@ -30,6 +34,47 @@ val generatePublishing by tasks.registering {
             output.resolve("res/drawable-nodpi").mkdirs()
             iconFile.copyTo(output.resolve("res/drawable-nodpi/publishing_icon.png"), overwrite = true)
         }
+        fun xml(value: String) = value.replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&apos;")
+        val games = (publishingConfig["games"] as? List<*>)?.mapNotNull { it as? Map<*, *> }.orEmpty()
+        val aliases = linkedMapOf<String, String>()
+        val manifestAliases = StringBuilder()
+        val labels = StringBuilder("<resources>\n")
+        for (game in games) {
+            val id = game["id"] as? String ?: continue
+            if (!Regex("[a-zA-Z][a-zA-Z0-9-]{1,39}").matches(id) || aliases.containsKey("game:$id")) continue
+            val hash = MessageDigest.getInstance("SHA-256").digest(id.toByteArray())
+                .joinToString("") { "%02x".format(it) }
+            val alias = "com.example.myapplication.MainActivityGame${hash}Alias"
+            val resource = "publishing_game_$hash"
+            val iconName = game["iconFile"] as? String ?: ""
+            val dedicatedIcon = if (Regex("[0-9a-f]{64}\\.png").matches(iconName)) gameIconDir.resolve(iconName) else null
+            val icon = if (dedicatedIcon?.isFile == true) {
+                output.resolve("res/drawable-nodpi").mkdirs()
+                dedicatedIcon.copyTo(output.resolve("res/drawable-nodpi/$resource.png"), overwrite = true)
+                "@drawable/$resource"
+            } else if (managed && iconFile.exists()) "@drawable/publishing_icon" else "@mipmap/ic_launcher"
+            val label = (game["name"] as? String ?: id).replace("\\", "\\\\").replace("'", "\\'").replace("\"", "\\\"")
+            labels.append("<string name=\"$resource\" formatted=\"false\">${xml("\"$label\"")}</string>\n")
+            aliases["game:$id"] = alias
+            manifestAliases.append("""
+                <activity-alias android:name="$alias" android:enabled="false" android:exported="true"
+                    android:icon="$icon" android:roundIcon="$icon" android:label="@string/$resource"
+                    android:targetActivity=".MainActivity">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity-alias>
+            """.trimIndent())
+        }
+        labels.append("</resources>")
+        output.resolve("res/values").mkdirs()
+        output.resolve("res/values/publishing_games.xml").writeText(labels.toString())
+        output.resolve("assets/publishing-launchers.json").writeText(JsonOutput.toJson(aliases))
+        output.resolve("AndroidManifest.xml").writeText(
+            manifestTemplate.readText().replace("</application>", "$manifestAliases\n</application>")
+        )
     }
 }
 tasks.named("preBuild").configure { dependsOn(generatePublishing) }
@@ -68,6 +113,7 @@ android {
     }
 
     sourceSets.getByName("main") {
+        manifest.srcFile(generatedPublishing.map { it.file("AndroidManifest.xml") })
         assets.srcDir(generatedPublishing.map { it.dir("assets") })
         res.srcDir(generatedPublishing.map { it.dir("res") })
     }

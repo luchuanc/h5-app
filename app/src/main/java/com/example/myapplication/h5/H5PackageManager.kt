@@ -55,7 +55,7 @@ class H5PackageManager(
     fun hasSelectedLaunchTarget(): Boolean = prefs.contains(PREF_SELECTED_LAUNCH_TARGET)
 
     fun getSelectableBundleOptions(): List<LaunchBundleOption> = getAvailableBundleOptions()
-        .filterNot { it.id == "builtin:aurora" || it.id == "builtin:midnight" }
+        .filterNot { it.id in setOf("builtin:aurora", "builtin:midnight", "builtin:debug") }
 
     fun selectLaunchTarget(id: String): Boolean = synchronized(selectionLock) {
         if (hasSelectedLaunchTarget()) return false
@@ -64,7 +64,7 @@ class H5PackageManager(
         val stored = prefs.edit().putString(PREF_SELECTED_LAUNCH_TARGET, id).commit()
         if (stored) {
             gameCatalog.remember(option)
-            BundleAliasManager.applyAlias(context, option.launcherAliasId)
+            BundleAliasManager.applyAlias(context, option.launcherAliasId, option.id)
         }
         return stored
     }
@@ -92,7 +92,7 @@ class H5PackageManager(
     fun syncLauncherAliasWithSelection() {
         val option = getAvailableBundleOptions().firstOrNull { it.id == getSelectedLaunchTargetId() }
             ?: defaultBuiltinOption()
-        BundleAliasManager.applyAlias(context, option.launcherAliasId)
+        BundleAliasManager.applyAlias(context, option.launcherAliasId, option.id)
     }
 
     private fun builtInOption(

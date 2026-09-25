@@ -15,10 +15,15 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.MyApplication">
+        <receiver android:name=".PackageUpdatedReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
         <activity
             android:name=".BundlePickerActivity"
             android:exported="false"
-            android:label="Select Bundle"
+            android:label="选择内容"
             android:theme="@style/Theme.MyApplication" />
         <activity
             android:name=".MainActivity"

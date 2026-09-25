@@ -28,3 +28,5 @@ emulator_*.png
 *.keystore
 *.p12
 /output/
+
+/publishing-icons/
