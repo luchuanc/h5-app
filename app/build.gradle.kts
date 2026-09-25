@@ -4,6 +4,29 @@ plugins {
 }
 
 import java.util.Properties
+import groovy.json.JsonSlurper
+
+val publishingFile = rootProject.file("publishing.json")
+val publishingConfig: Map<*, *> = if (publishingFile.exists()) JsonSlurper().parse(publishingFile) as Map<*, *> else emptyMap<String, Any>()
+val managed = publishingFile.exists()
+val iconFile = rootProject.file("publishing-icon.png")
+val generatedPublishing = layout.buildDirectory.dir("generated/publishing")
+val generatePublishing by tasks.registering {
+    inputs.files(publishingFile, iconFile).optional()
+    outputs.dir(generatedPublishing)
+    doLast {
+        val output = generatedPublishing.get().asFile
+        output.deleteRecursively()
+        output.resolve("assets").mkdirs()
+        output.resolve("res").mkdirs()
+        if (managed) publishingFile.copyTo(output.resolve("assets/publishing.json"), overwrite = true)
+        if (managed && iconFile.exists()) {
+            output.resolve("res/drawable-nodpi").mkdirs()
+            iconFile.copyTo(output.resolve("res/drawable-nodpi/publishing_icon.png"), overwrite = true)
+        }
+    }
+}
+tasks.named("preBuild").configure { dependsOn(generatePublishing) }
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
@@ -26,10 +49,21 @@ android {
         applicationId = "com.example.myapplication"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = (publishingConfig["versionCode"] as? Number)?.toInt() ?: 1
+        versionName = publishingConfig["versionName"] as? String ?: "1.0"
+        buildConfigField("boolean", "PUBLISHING_MANAGED", managed.toString())
+        resValue("string", "publishing_app_name", (publishingConfig["appName"] as? String ?: "游戏中心").replace("&", "&amp;").replace("<", "&lt;").replace("'", "\\'").replace("\"", "\\\""))
+        manifestPlaceholders["publishingEnabled"] = managed.toString()
+        manifestPlaceholders["auroraEnabled"] = (!managed).toString()
+        manifestPlaceholders["publishingIcon"] = if (managed && iconFile.exists()) "@drawable/publishing_icon" else "@mipmap/ic_launcher"
+        manifestPlaceholders["applicationLabel"] = if (managed) "@string/publishing_app_name" else "@string/app_name"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    sourceSets.getByName("main") {
+        assets.srcDir(generatedPublishing.map { it.dir("assets") })
+        res.srcDir(generatedPublishing.map { it.dir("res") })
     }
 
     compileOptions {

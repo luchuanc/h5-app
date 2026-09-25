@@ -23,6 +23,18 @@ class BundlePickerActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         packageManager = H5PackageManager(applicationContext)
 
+        render()
+        if (packageManager.gameCatalog.url().isNotBlank()) refreshGames()
+    }
+
+    private fun refreshGames() {
+        packageManager.refreshGamesAsync(
+            onSuccess = { count -> runOnUiThread { if (!isDestroyed) { render(); Toast.makeText(this, "已更新 $count 个游戏", Toast.LENGTH_SHORT).show() } } },
+            onFailure = { error -> runOnUiThread { if (!isDestroyed) Toast.makeText(this, "${error.message}，保留已缓存列表", Toast.LENGTH_LONG).show() } }
+        )
+    }
+
+    private fun render() {
         val currentId = packageManager.getSelectedLaunchTargetId()
         val options = packageManager.getAvailableBundleOptions()
 
@@ -33,19 +45,33 @@ class BundlePickerActivity : ComponentActivity() {
         }
 
         content.addView(TextView(this).apply {
-            text = "Select Bundle"
+            text = "选择游戏 / Bundle"
             textSize = 28f
             setTypeface(typeface, Typeface.BOLD)
             setTextColor(Color.parseColor("#17324D"))
         })
 
         content.addView(TextView(this).apply {
-            text = "Pick a bundle or enter an H5 URL. The app will restart and use it as the default home next time."
+            text = "选择后立即打开，下次启动仍使用所选游戏。可刷新平台最新列表。"
             textSize = 15f
             setTextColor(Color.parseColor("#5F7488"))
             setPadding(0, dp(10), 0, dp(22))
         })
 
+        val catalogInput = EditText(this).apply {
+            hint = "http://服务器:8200/api/catalog"
+            setText(packageManager.gameCatalog.url())
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            contentDescription = "游戏列表地址"
+        }
+        content.addView(catalogInput)
+        content.addView(Button(this).apply {
+            text = "刷新远端游戏列表"
+            setOnClickListener {
+                if (packageManager.gameCatalog.saveUrl(catalogInput.text.toString())) refreshGames()
+                else Toast.makeText(this@BundlePickerActivity, "请输入有效 HTTP/HTTPS 列表地址", Toast.LENGTH_SHORT).show()
+            }
+        })
         content.addView(createCustomUrlCard())
 
         options.forEach { option ->
@@ -202,6 +228,11 @@ class BundlePickerActivity : ComponentActivity() {
                 H5PackageManager.restartApp(this@BundlePickerActivity)
             }
         }
+    }
+
+    override fun onDestroy() {
+        packageManager.shutdown()
+        super.onDestroy()
     }
 
     private fun dp(value: Int): Int =

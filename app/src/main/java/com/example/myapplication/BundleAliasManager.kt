@@ -16,7 +16,7 @@ object BundleAliasManager {
     private const val TAG = "BundleAliasManager"
 
     fun applyAlias(context: Context, aliasId: String?) {
-        val resolvedAlias = when (aliasId) {
+        val resolvedAlias = if (BuildConfig.PUBLISHING_MANAGED) "publishing" else when (aliasId) {
             ALIAS_AURORA,
             ALIAS_RUNTIME,
             ALIAS_DOWNLOADED,
@@ -47,6 +47,7 @@ object BundleAliasManager {
     }
 
     private fun aliasComponents(context: Context): Map<String, ComponentName> = mapOf(
+        "publishing" to ComponentName(context, MainActivityPublishingAlias::class.java),
         ALIAS_AURORA to ComponentName(context, MainActivityAuroraAlias::class.java),
         ALIAS_RUNTIME to ComponentName(context, MainActivityRuntimeAlias::class.java),
         ALIAS_DOWNLOADED to ComponentName(context, MainActivityDownloadedAlias::class.java),
@@ -67,3 +68,5 @@ class MainActivityLujiaAlias
 class MainActivityPointsAlias
 
 class MainActivityCustomAlias
+
+class MainActivityPublishingAlias

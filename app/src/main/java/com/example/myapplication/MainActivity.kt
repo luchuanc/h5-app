@@ -81,12 +81,27 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         installBackHandler()
         loadBestAvailableBundle()
         syncRemoteBundleInBackground()
+        if (packageManager.gameCatalog.url().isNotBlank()) packageManager.refreshGamesAsync(onSuccess = {
+            runOnUiThread {
+                if (!isDestroyed) {
+                    val refreshed = packageManager.resolveLaunchBundle()
+                    if (refreshed.entryUrl != currentBundle?.entryUrl) loadBundle(refreshed, forceRefresh = true)
+                }
+            }
+        })
     }
 
     private fun createRootView(): View {
         val root = FrameLayout(this).apply {
             clipToPadding = true
             addView(webView)
+            if (BuildConfig.DEBUG) addView(android.widget.Button(this@MainActivity).apply {
+                text = "游戏"
+                contentDescription = "切换游戏或调试 Bundle"
+                textSize = 12f
+                alpha = 0.85f
+                setOnClickListener { startActivity(Intent(this@MainActivity, BundlePickerActivity::class.java)) }
+            }, FrameLayout.LayoutParams((64 * resources.displayMetrics.density).toInt(), (48 * resources.displayMetrics.density).toInt(), android.view.Gravity.TOP or android.view.Gravity.END))
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
@@ -251,6 +266,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     private fun syncRemoteBundleInBackground() {
         packageManager.syncRemotePackageAsync(
             onSuccess = { bundle ->
+                if (packageManager.resolveLaunchBundle().mode != H5PackageManager.MODE_LOCAL_PACKAGE) return@syncRemotePackageAsync
                 val shouldReload = currentBundle?.mode != bundle.mode ||
                     currentBundle?.version != bundle.version
                 currentBundle = bundle

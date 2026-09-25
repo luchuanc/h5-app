@@ -21,6 +21,7 @@ import java.util.zip.ZipInputStream
 class H5PackageManager(
     private val context: Context
 ) {
+    val gameCatalog = GameCatalog(context)
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val rootDir = File(context.filesDir, "h5")
@@ -41,11 +42,11 @@ class H5PackageManager(
         val builtin = builtinBundleOptions()
         val customRemote = customRemoteOption()?.let { listOf(it) }.orEmpty()
         val local = localPackageOption()?.let { listOf(it) }.orEmpty()
-        return builtin + customRemote + local
+        return gameCatalog.options() + builtin + customRemote + local
     }
 
     fun getSelectedLaunchTargetId(): String =
-        prefs.getString(PREF_SELECTED_LAUNCH_TARGET, defaultBuiltinOption().id)
+        prefs.getString(PREF_SELECTED_LAUNCH_TARGET, gameCatalog.defaultId() ?: defaultBuiltinOption().id)
             ?: defaultBuiltinOption().id
 
     fun selectLaunchTarget(id: String): Boolean {
@@ -53,6 +54,7 @@ class H5PackageManager(
 
         val stored = prefs.edit().putString(PREF_SELECTED_LAUNCH_TARGET, id).commit()
         if (stored) {
+            gameCatalog.remember(option)
             BundleAliasManager.applyAlias(context, option.launcherAliasId)
         }
         return stored
@@ -71,6 +73,10 @@ class H5PackageManager(
             BundleAliasManager.applyAlias(context, BundleAliasManager.ALIAS_CUSTOM)
         }
         return stored
+    }
+
+    fun refreshGamesAsync(onSuccess: (Int) -> Unit = {}, onFailure: (Throwable) -> Unit = {}) {
+        executor.execute { runCatching { gameCatalog.refresh() }.onSuccess(onSuccess).onFailure(onFailure) }
     }
 
     fun syncLauncherAliasWithSelection() {
@@ -509,8 +515,8 @@ class H5PackageManager(
         private const val META_FILE_NAME = "bundle_meta.json"
         private const val BUNDLE_CONFIG_FILE_NAME = "bundle.json"
         private const val MODE_BUILTIN = "builtin"
-        private const val MODE_REMOTE_URL = "remote_url"
-        private const val MODE_LOCAL_PACKAGE = "local_package"
+        const val MODE_REMOTE_URL = "remote_url"
+        const val MODE_LOCAL_PACKAGE = "local_package"
         private const val PREFS_NAME = "h5_bundle_prefs"
         private const val PREF_SELECTED_LAUNCH_TARGET = "selected_launch_target"
         private const val PREF_CUSTOM_REMOTE_URL = "custom_remote_url"
