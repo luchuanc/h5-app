@@ -51,7 +51,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         // before changing aliases, since Android finishes a disabled alias's activity.
         if (!packageManager.hasSelectedLaunchTarget() &&
             intent.component?.className != MainActivity::class.java.name) {
-            H5PackageManager.restartApp(this)
+            // CLEAR_TASK can reuse the alias task's base component, so use a fresh
+            // task and remove the old one before disabling its launcher component.
+            startActivity(Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+            })
+            finishAndRemoveTask()
             return
         }
         packageManager.syncLauncherAliasWithSelection()
