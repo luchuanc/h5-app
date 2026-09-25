@@ -62,6 +62,34 @@ class FirstLaunchTest {
         return visible
     }
 
+    @Test fun clearedDataLaunchesPosterThroughThePreviouslySelectedAlias() {
+        cleanup()
+        val manager = H5PackageManager(context)
+        try { assertTrue(manager.selectLaunchTarget("game:xiangsu")) }
+        finally { manager.shutdown() }
+        val launcher = requireNotNull(context.packageManager.getLaunchIntentForPackage(context.packageName))
+        assertTrue(launcher.component!!.className.contains("MainActivityGame"))
+        // Android clears preferences but retains component overrides on "Clear storage".
+        cleanup()
+        context.startActivity(launcher.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        lateinit var web: WebView
+        eventually {
+            var ready = false
+            instrumentation.runOnMainSync {
+                val activity = ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED)
+                    .filterIsInstance<MainActivity>().firstOrNull()
+                if (activity?.componentName?.className == MainActivity::class.java.name) {
+                    findWebView(activity.window.decorView)?.let { web = it; ready = true }
+                }
+            }
+            ready
+        }
+        eventually { js(web, "!!document.getElementById('heroTapTarget')") == "true" }
+        assertTrue(context.packageManager.getLaunchIntentForPackage(context.packageName)!!.component!!.className
+            .endsWith("MainActivityPublishingAlias"))
+        assertFalse(pickerVisible())
+    }
+
     @Test fun posterRequiresTenClicksAndHasNoInjectedConsole() {
         cleanup()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->

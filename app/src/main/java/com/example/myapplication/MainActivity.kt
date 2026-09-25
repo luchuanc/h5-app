@@ -47,6 +47,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         CookieManager.getInstance().setAcceptCookie(true)
 
         packageManager = H5PackageManager(applicationContext)
+        // Clearing data leaves the old launcher alias enabled. Enter the stable activity
+        // before changing aliases, since Android finishes a disabled alias's activity.
+        if (!packageManager.hasSelectedLaunchTarget() &&
+            intent.component?.className != MainActivity::class.java.name) {
+            H5PackageManager.restartApp(this)
+            return
+        }
         packageManager.syncLauncherAliasWithSelection()
         recordingManager = RecordingManager(applicationContext)
 
@@ -363,7 +370,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        webView.invalidate()
+        if (::webView.isInitialized) webView.invalidate()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -372,11 +379,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
 
     override fun onDestroy() {
-        recordingManager.shutdown()
-        recordingManager.cleanupAllRecordings()
-        webView.removeJavascriptInterface("NativeBridgeHost")
-        webView.stopLoading()
-        webView.destroy()
+        if (::recordingManager.isInitialized) {
+            recordingManager.shutdown()
+            recordingManager.cleanupAllRecordings()
+        }
+        if (::webView.isInitialized) {
+            webView.removeJavascriptInterface("NativeBridgeHost")
+            webView.stopLoading()
+            webView.destroy()
+        }
         packageManager.shutdown()
         super.onDestroy()
     }
