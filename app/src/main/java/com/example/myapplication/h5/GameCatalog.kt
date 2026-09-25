@@ -43,7 +43,7 @@ class GameCatalog(context: Context) {
             val option = parseGame(it)
             if (option != null && result.none { game -> game.id == option.id }) result.add(option)
         }
-        val defaultUrl = validUrl(bundled.optString("gameUrl"))
+        val defaultUrl = validUrl(bundled.optString("gameUrl"))?.let(::currentAddress)
         if (defaultUrl != null) {
             val id = defaultId() ?: "platform:default"
             if (result.none { it.id == id }) result.add(0, LaunchBundleOption(
@@ -66,11 +66,25 @@ class GameCatalog(context: Context) {
             val games = json.getJSONArray("games")
             val options = parseGames(games)
             val edit = prefs.edit().putString("games", games.toString())
+            validUrl(json.optString("baseUrl"))?.let { edit.putString("baseUrl", it) }
+            val selected = runCatching { prefs.getString("selected", null)?.let { JSONObject(it) } }.getOrNull()
+            options.firstOrNull { it.id == "game:" + selected?.optString("id") }?.let { option ->
+                selected?.put("url", option.entryUrl)?.put("version", option.version)
+                edit.putString("selected", selected.toString())
+            }
             validUrl(json.optString("catalogUrl"))?.let { edit.putString("url", it) }
             edit.commit()
             return options.size
         } finally { connection.disconnect() }
     }
+    private fun currentAddress(value: String): String {
+        val origin = runCatching { URI(bundled.optString("catalogUrl")) }.getOrNull() ?: return value
+        val current = runCatching { URI(prefs.getString("baseUrl", "")) }.getOrNull() ?: return value
+        val address = URI(value)
+        if (current.host.isNullOrBlank() || address.scheme != origin.scheme || address.rawAuthority != origin.rawAuthority) return value
+        return URI(current.scheme, current.rawAuthority, address.path, address.query, address.fragment).toASCIIString()
+    }
+
     private fun parseGames(array: JSONArray): List<LaunchBundleOption> {
         require(array.length() <= 500) { "游戏列表过大" }
         return (0 until array.length()).mapNotNull { array.optJSONObject(it)?.let(::parseGame) }.distinctBy { it.id }

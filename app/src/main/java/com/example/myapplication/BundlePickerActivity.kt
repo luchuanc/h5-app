@@ -82,6 +82,11 @@ class BundlePickerActivity : ComponentActivity() {
             addView(content)
         }
 
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(scrollView) { view, insets ->
+            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
         setContentView(scrollView)
     }
 

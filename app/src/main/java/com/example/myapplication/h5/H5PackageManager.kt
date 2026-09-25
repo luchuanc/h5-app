@@ -7,6 +7,7 @@ import android.net.Uri
 import android.util.Log
 import com.example.myapplication.BuildConfig
 import com.example.myapplication.BundleAliasManager
+import com.example.myapplication.MainActivity
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
@@ -524,15 +525,11 @@ class H5PackageManager(
         private const val CUSTOM_REMOTE_OPTION_ID = "remote:custom"
 
         fun restartApp(activity: Activity) {
-            val launchIntent = activity.packageManager
-                .getLaunchIntentForPackage(activity.packageName)
-                ?.component
-                ?.let { Intent.makeRestartActivityTask(it) }
-                ?: return
-
-            activity.startActivity(launchIntent)
-            activity.finishAffinity()
-            Runtime.getRuntime().exit(0)
+            // Recreate the task without terminating the process before Android starts the new activity.
+            activity.startActivity(Intent(activity, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            })
+            activity.finish()
         }
     }
 }
